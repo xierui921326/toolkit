@@ -258,8 +258,9 @@ func Md5(str string) string {
 //
 // @description 将结构体转换为 map[string]interface{}，返回转换后的 map
 // @params obj 结构体
+// @params isSnake 是否将字段名转换为下划线格式
 // @return map[string]interface{} 转换后的 map
-func StructToMap(obj interface{}) map[string]interface{} {
+func StructToMap(obj interface{}, isSnake bool) map[string]interface{} {
 	// 创建一个空的 map
 	result := make(map[string]interface{})
 
@@ -299,18 +300,26 @@ func StructToMap(obj interface{}) map[string]interface{} {
 			continue
 		}
 
-		// 将字段名从驼峰格式转换为下划线格式
-		snakeFieldName := strcase.ToSnake(field.Name)
+		// 如果字段名为空，跳过
+		if field.Name == "" {
+			continue
+		}
+
+		fieldName := field.Name
+		if isSnake {
+			// 将字段名从驼峰格式转换为下划线格式
+			fieldName = strcase.ToSnake(field.Name)
+		}
 
 		// 如果字段是结构体，递归调用 structToMap
 		if fieldValue.Kind() == reflect.Struct {
-			result[snakeFieldName] = StructToMap(fieldValue.Interface())
+			result[fieldName] = StructToMap(fieldValue.Interface(), isSnake)
 		} else if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() {
 			// 如果字段是指针且不为 nil，递归调用 structToMap
-			result[snakeFieldName] = StructToMap(fieldValue.Elem().Interface())
+			result[fieldName] = StructToMap(fieldValue.Elem().Interface(), isSnake)
 		} else {
 			// 否则，直接放入 map 中
-			result[snakeFieldName] = fieldValue.Interface()
+			result[fieldName] = fieldValue.Interface()
 		}
 	}
 
